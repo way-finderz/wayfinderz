@@ -1,0 +1,118 @@
+{
+  "$schema": "https://app.flightcontrol.dev/schema.json",
+  "environments": [
+    {
+      "id": "production",
+      "name": "Production",
+      "region": "eu-west-2",
+      "source": {
+        "branch": "main"
+      },
+      "services": [
+        {
+          "id": "api",
+          "name": "API",
+          "type": "fargate",
+          "buildType": "docker",
+          "dockerfilePath": "apps/api/Dockerfile",
+          "dockerContext": ".",
+          "domain": "api.way-finderz.com",
+          "port": 3000,
+          "cpu": 0.25,
+          "memory": 0.5,
+          "minInstances": 1,
+          "maxInstances": 2,
+          "healthCheckPath": "/health",
+          "envVariables": {
+            "NODE_ENV": "production",
+            "API_PORT": "3000",
+            "DATABASE_URL": {
+              "fromService": {
+                "id": "db",
+                "value": "dbConnectionString"
+              }
+            },
+            "BETTER_AUTH_SECRET": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p08s12d9.BETTER_AUTH_SECRET"
+            },
+            "BETTER_AUTH_URL": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18t12cr.BETTER_AUTH_URL"
+            },
+            "SQS_EMAIL_QUEUE_URL": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18v122d.SQS_EMAIL_QUEUE_URL"
+            },
+            "SES_FROM_EMAIL": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18u12yk.SES_FROM_EMAIL"
+            },
+            "AWS_REGION": "eu-west-2",
+            "MOCK_EMAILS": "false",
+            "FRONTEND_URL": {
+              "fromService": {
+                "id": "web",
+                "value": "origin"
+              }
+            }
+          }
+        },
+        {
+          "id": "web",
+          "name": "Web",
+          "type": "static",
+          "buildType": "nixpacks",
+          "domain": "way-finderz.com",
+          "basePath": ".",
+          "installCommand": "pnpm install",
+          "buildCommand": "pnpm --filter api build && pnpm --filter web build",
+          "outputDirectory": "apps/web/out",
+          "singlePageApp": true,
+          "dependsOn": ["api"],
+          "envVariables": {
+            "NEXT_PUBLIC_API_URL": "https://api.way-finderz.com"
+          }
+        },
+        {
+          "id": "email-worker",
+          "name": "Email Worker",
+          "type": "worker",
+          "buildType": "docker",
+          "dockerfilePath": "apps/api/Dockerfile.worker",
+          "dockerContext": ".",
+          "cpu": 0.25,
+          "memory": 0.5,
+          "minInstances": 1,
+          "maxInstances": 1,
+          "envVariables": {
+            "NODE_ENV": "production",
+            "DATABASE_URL": {
+              "fromService": {
+                "id": "db",
+                "value": "dbConnectionString"
+              }
+            },
+            "BETTER_AUTH_SECRET": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p08s12d9.BETTER_AUTH_SECRET"
+            },
+            "SQS_EMAIL_QUEUE_URL": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18v122d.SQS_EMAIL_QUEUE_URL"
+            },
+            "SES_FROM_EMAIL": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18u12yk.SES_FROM_EMAIL"
+            },
+            "AWS_REGION": "eu-west-2",
+            "MOCK_EMAILS": "false"
+          }
+        },
+        {
+          "id": "db",
+          "name": "Database",
+          "type": "rds",
+          "engine": "postgres",
+          "engineVersion": "16",
+          "instanceSize": "db.t4g.micro",
+          "storage": 20,
+          "private": true
+        }
+      ]
+    }
+  ]
+}
