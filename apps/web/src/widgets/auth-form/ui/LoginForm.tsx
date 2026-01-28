@@ -11,9 +11,10 @@ import { Button, Input } from "@/shared/ui";
 
 interface LoginFormProps {
   className?: string;
+  redirectTo?: string;
 }
 
-export function LoginForm({ className }: LoginFormProps) {
+export function LoginForm({ className, redirectTo = "/dashboard" }: LoginFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
@@ -39,7 +40,7 @@ export function LoginForm({ className }: LoginFormProps) {
       }
 
       queryClient.clear();
-      router.push("/dashboard");
+      router.push(redirectTo);
     } catch (_err) {
       setError("An unexpected error occurred");
     } finally {

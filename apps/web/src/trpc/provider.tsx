@@ -2,13 +2,16 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { env } from "@/shared/config/env";
+import { logger } from "@/shared/lib";
 
 import { trpc } from "./client";
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
+  logger.debug("TRPCProvider", "Render", { apiUrl: env.API_URL });
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -34,6 +37,10 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: `${env.API_URL}/api/trpc`,
           fetch(url: URL | RequestInfo, options?: RequestInit) {
+            logger.debug("TRPCProvider", "Fetch request", {
+              url: typeof url === "string" ? url : url.toString(),
+            });
+
             return fetch(url, {
               ...options,
               credentials: "include",
@@ -43,6 +50,14 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       ],
     })
   );
+
+  useEffect(() => {
+    logger.info("TRPCProvider", "Mounted", { apiUrl: env.API_URL });
+
+    return () => {
+      logger.debug("TRPCProvider", "Unmounted");
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

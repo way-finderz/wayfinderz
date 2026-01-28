@@ -129,6 +129,9 @@ export default tseslint.config(
       react: {
         version: "detect",
       },
+      next: {
+        rootDir: "apps/web",
+      },
     },
     rules: {
       // React
@@ -146,9 +149,9 @@ export default tseslint.config(
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
 
-      // Next.js
-      "@next/next/no-html-link-for-pages": "error",
-      "@next/next/no-img-element": "warn",
+      // Next.js - all recommended rules
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
     },
   },
 

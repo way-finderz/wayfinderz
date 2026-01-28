@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { match, P } from "ts-pattern";
 
-import { ProtectedRoute } from "@/features/auth";
+import { AuthGate } from "@/features/auth";
 import {
   GameErrorScreen,
   GameLoadingScreen,
@@ -144,10 +144,10 @@ function GameContent({ journeySlug }: { journeySlug: string }) {
 
 export function GamePage({ journeySlug }: GamePageProps) {
   return (
-    <ProtectedRoute>
+    <AuthGate>
       <GameErrorBoundary>
         <GameContent journeySlug={journeySlug} />
       </GameErrorBoundary>
-    </ProtectedRoute>
+    </AuthGate>
   );
 }

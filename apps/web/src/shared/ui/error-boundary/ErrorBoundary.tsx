@@ -2,6 +2,8 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { logger } from "@/shared/lib";
+
 import { Button } from "../button";
 
 export interface ErrorBoundaryProps {
@@ -23,24 +25,52 @@ export class ErrorBoundary extends Component<
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
+    logger.debug("ErrorBoundary", "Constructed");
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    logger.error("ErrorBoundary", "getDerivedStateFromError", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
+
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    logger.error("ErrorBoundary", "componentDidCatch", {
+      error: {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      },
+      componentStack: errorInfo.componentStack,
+    });
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.props.onError?.(error, errorInfo);
   }
 
+  componentDidMount(): void {
+    logger.debug("ErrorBoundary", "Mounted");
+  }
+
+  componentWillUnmount(): void {
+    logger.debug("ErrorBoundary", "Will unmount");
+  }
+
   handleReset = (): void => {
+    logger.info("ErrorBoundary", "Reset triggered");
     this.setState({ hasError: false, error: null });
     this.props.onReset?.();
   };
 
   render(): ReactNode {
     if (this.state.hasError) {
+      logger.warn("ErrorBoundary", "Rendering error fallback", {
+        errorMessage: this.state.error?.message,
+      });
+
       if (this.props.fallback) {
         return this.props.fallback;
       }
@@ -61,6 +91,8 @@ export class ErrorBoundary extends Component<
         </div>
       );
     }
+
+    logger.debug("ErrorBoundary", "Rendering children");
 
     return this.props.children;
   }

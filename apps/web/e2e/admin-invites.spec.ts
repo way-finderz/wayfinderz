@@ -302,7 +302,7 @@ test.describe("Admin Invite Management", () => {
   });
 
   test.describe("Access Control", () => {
-    test("non-admin users cannot access admin invites page", async ({ page }) => {
+    test("non-admin users see access denied message", async ({ page }) => {
       // Mock regular user session
       await page.route("**/api/auth/get-session", async (route) => {
         await route.fulfill({
@@ -322,11 +322,14 @@ test.describe("Admin Invite Management", () => {
 
       await page.goto("/admin/invites");
 
-      // Should redirect away from admin page
-      await expect(page).not.toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+      // Should stay on admin URL but show access denied
+      await expect(page).toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+      await expect(page.getByRole("heading", { name: /access denied/i })).toBeVisible();
+      await expect(page.getByText(/don't have permission/i)).toBeVisible();
+      await expect(page.getByRole("link", { name: /go to dashboard/i })).toBeVisible();
     });
 
-    test("unauthenticated users cannot access admin invites page", async ({ page }) => {
+    test("unauthenticated users see inline login form", async ({ page }) => {
       await page.route("**/api/auth/get-session", async (route) => {
         await route.fulfill({
           status: 200,
@@ -337,8 +340,11 @@ test.describe("Admin Invite Management", () => {
 
       await page.goto("/admin/invites");
 
-      // Should redirect away from admin page (to home or login)
-      await expect(page).not.toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+      // Should stay on admin URL but show login form
+      await expect(page).toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+      await expect(page.getByRole("heading", { name: /sign in to continue/i })).toBeVisible();
+      await expect(page.getByTestId("login-email")).toBeVisible();
+      await expect(page.getByTestId("login-submit")).toBeVisible();
     });
   });
 });

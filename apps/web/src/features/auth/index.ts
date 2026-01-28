@@ -1,5 +1,7 @@
 export { authClient, signIn, signOut, signUp, useSession } from "./api/auth-client";
-export { AdminRoute } from "./ui/AdminRoute";
+export { AdminGate } from "./ui/AdminGate";
+export { AuthGate } from "./ui/AuthGate";
+export { AuthPrompt } from "./ui/AuthPrompt";
 export { ChangePasswordDialog, type ChangePasswordDialogProps } from "./ui/ChangePasswordDialog";
 export { EmailSentScreen } from "./ui/EmailSentScreen";
 export { EmailVerificationBlocked } from "./ui/EmailVerificationBlocked";
@@ -7,7 +9,6 @@ export { EmailVerificationWarning, useEmailVerification } from "./ui/EmailVerifi
 export { ForgotPasswordForm, type ForgotPasswordFormProps } from "./ui/ForgotPasswordForm";
 export { InvalidTokenScreen } from "./ui/InvalidTokenScreen";
 export { ProfileCard, type ProfileCardProps } from "./ui/ProfileCard";
-export { ProtectedRoute } from "./ui/ProtectedRoute";
 export { ResetPasswordForm, type ResetPasswordFormProps } from "./ui/ResetPasswordForm";
 export { ResetSuccessScreen, type ResetSuccessScreenProps } from "./ui/ResetSuccessScreen";
 export { SignupFormFields, type SignupFormFieldsProps } from "./ui/SignupFormFields";

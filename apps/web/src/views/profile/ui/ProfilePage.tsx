@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { ProfileCard, ProtectedRoute, signOut, useSession } from "@/features/auth";
+import { AuthGate, ProfileCard, signOut, useSession } from "@/features/auth";
 import { useGameStore } from "@/features/game";
 
 export function ProfilePage() {
@@ -24,7 +24,7 @@ export function ProfilePage() {
   const user = session?.user;
 
   return (
-    <ProtectedRoute>
+    <AuthGate>
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
@@ -36,6 +36,6 @@ export function ProfilePage() {
           onSignOut={handleSignOut}
         />
       </div>
-    </ProtectedRoute>
+    </AuthGate>
   );
 }
