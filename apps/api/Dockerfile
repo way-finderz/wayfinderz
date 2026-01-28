@@ -3,6 +3,8 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 FROM base AS deps
 WORKDIR /app
+# Ensure devDependencies are installed for build (ignore NODE_ENV from build args)
+ENV NODE_ENV=development
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY scripts ./scripts/
 COPY apps/api/package.json ./apps/api/
