@@ -28,11 +28,4 @@ await build({
   outfile: "dist/index.js",
 });
 
-// Build email worker
-await build({
-  ...baseConfig,
-  entryPoints: ["src/workers/email-worker.ts"],
-  outfile: "dist/workers/email-worker.js",
-});
-
 console.log("✓ Build completed successfully");

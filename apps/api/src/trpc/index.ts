@@ -18,7 +18,9 @@ export interface Context {
 export async function createContext(
   opts: FetchCreateContextFnOptions
 ): Promise<Context> {
-  const headers = Object.fromEntries(opts.req.headers);
+  const headers = Object.fromEntries(
+    Array.from(opts.req.headers as unknown as Iterable<[string, string]>)
+  );
 
   logger.debug("Creating tRPC context", {
     url: opts.req.url,
