@@ -10,6 +10,7 @@ A language learning flashcard game where users progress along a virtual route fr
 | Backend         | Koa v3                   |
 | Database        | PostgreSQL + Drizzle ORM |
 | Auth            | BetterAuth               |
+| Email           | Resend + Inngest         |
 | Language        | TypeScript               |
 | Package Manager | pnpm (monorepo)          |
 
@@ -58,7 +59,7 @@ way-finderz/
 1. **Clone and install dependencies:**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/way-finderz/wayfinderz
    cd way-finderz
    pnpm install
    ```
@@ -200,6 +201,17 @@ ADMIN_NAME=Admin
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
+### Email & Background Jobs (Production)
+
+| Variable              | Purpose             |
+| --------------------- | ------------------- |
+| `RESEND_API_KEY`      | Resend API key      |
+| `EMAIL_FROM`          | Sender address      |
+| `INNGEST_EVENT_KEY`   | Inngest event key   |
+| `INNGEST_SIGNING_KEY` | Inngest signing key |
+
+For local development, set `MOCK_EMAILS=true` to log emails to console.
+
 ## Architecture Notes
 
 ### Client-Centric Design
@@ -213,6 +225,18 @@ The game logic runs entirely in the browser. The backend serves as a thin API la
 ### SPA Mode
 
 Next.js is configured with `output: 'export'` for static site generation. All pages use the `'use client'` directive for client-side rendering.
+
+## Deployment
+
+The application is deployed via [Flightcontrol](https://www.flightcontrol.dev/) to AWS:
+
+| Component | Service         | Notes            |
+| --------- | --------------- | ---------------- |
+| Web       | CloudFront + S3 | Static export    |
+| API       | Fargate         | Docker container |
+| Database  | RDS PostgreSQL  | Private subnet   |
+
+Configuration: `flightcontrol.json`
 
 ## Development
 
