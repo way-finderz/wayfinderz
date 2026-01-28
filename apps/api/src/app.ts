@@ -1,14 +1,18 @@
 import cors from "@koa/cors";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { serve } from "inngest/koa";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
 
 import { env } from "@/env";
+import { inngestFunctions } from "@/inngest-functions";
 import { getErrorCode } from "@/lib/error-codes";
+import { inngest } from "@/lib/inngest";
 import { betterAuthMiddleware } from "@/middleware/better-auth";
 import { getLogger, httpLoggerMiddleware } from "@/middleware/http-logger";
 import { apiRateLimit } from "@/middleware/rate-limit";
 import { requestIdMiddleware } from "@/middleware/request-id";
+import { testEmailsRouter } from "@/routes/test-emails";
 import { createContext } from "@/trpc";
 import { appRouter } from "@/trpc/router";
 
@@ -90,6 +94,17 @@ app.use(async (ctx, next) => {
     ctx.body = { status: "ok" };
 
     return;
+  }
+  await next();
+});
+
+app.use(testEmailsRouter.routes());
+app.use(testEmailsRouter.allowedMethods());
+
+const inngestHandler = serve({ client: inngest, functions: inngestFunctions });
+app.use(async (ctx, next) => {
+  if (ctx.path === "/api/inngest") {
+    return inngestHandler(ctx);
   }
   await next();
 });

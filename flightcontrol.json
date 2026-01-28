@@ -25,6 +25,7 @@
           "healthCheckPath": "/health",
           "envVariables": {
             "NODE_ENV": "production",
+            "ALLOWED_ORIGINS": "https://way-finderz.com,https://www.way-finderz.com",
             "API_PORT": "3000",
             "DATABASE_URL": {
               "fromService": {
@@ -38,13 +39,16 @@
             "BETTER_AUTH_URL": {
               "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18t12cr.BETTER_AUTH_URL"
             },
-            "SQS_EMAIL_QUEUE_URL": {
-              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18v122d.SQS_EMAIL_QUEUE_URL"
+            "RESEND_API_KEY": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.9mdr08j5.RESEND_API_KEY"
             },
-            "SES_FROM_EMAIL": {
-              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18u12yk.SES_FROM_EMAIL"
+            "EMAIL_FROM": "Way Finderz <noreply@way-finderz.com>",
+            "INNGEST_EVENT_KEY": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.bgt513gp.INNGEST_EVENT_KEY"
             },
-            "AWS_REGION": "eu-west-2",
+            "INNGEST_SIGNING_KEY": {
+              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.bgt613e2.INNGEST_SIGNING_KEY"
+            },
             "MOCK_EMAILS": "false",
             "FRONTEND_URL": {
               "fromService": {
@@ -65,41 +69,11 @@
           "buildCommand": "pnpm --filter api build && pnpm --filter web build",
           "outputDirectory": "apps/web/out",
           "singlePageApp": true,
-          "dependsOn": ["api"],
+          "dependsOn": [
+            "api"
+          ],
           "envVariables": {
             "NEXT_PUBLIC_API_URL": "https://api.way-finderz.com"
-          }
-        },
-        {
-          "id": "email-worker",
-          "name": "Email Worker",
-          "type": "worker",
-          "buildType": "docker",
-          "dockerfilePath": "apps/api/Dockerfile.worker",
-          "dockerContext": ".",
-          "cpu": 0.25,
-          "memory": 0.5,
-          "minInstances": 1,
-          "maxInstances": 1,
-          "envVariables": {
-            "NODE_ENV": "production",
-            "DATABASE_URL": {
-              "fromService": {
-                "id": "db",
-                "value": "dbConnectionString"
-              }
-            },
-            "BETTER_AUTH_SECRET": {
-              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p08s12d9.BETTER_AUTH_SECRET"
-            },
-            "SQS_EMAIL_QUEUE_URL": {
-              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18v122d.SQS_EMAIL_QUEUE_URL"
-            },
-            "SES_FROM_EMAIL": {
-              "fromParameterStore": "fc.wayfinderz.env.cmkv2yrw90p6f3qt74bopb43v.p18u12yk.SES_FROM_EMAIL"
-            },
-            "AWS_REGION": "eu-west-2",
-            "MOCK_EMAILS": "false"
           }
         },
         {
