@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { AdminRoute } from "@/features/auth";
+import { AdminGate } from "@/features/auth";
 import {
   CreateInviteCard,
   InviteCodesTable,
@@ -46,7 +46,7 @@ export function AdminInvitesPage() {
   };
 
   return (
-    <AdminRoute>
+    <AdminGate>
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Invite Codes</h1>
 
@@ -69,6 +69,6 @@ export function AdminInvitesPage() {
           onDeactivate={handleDeactivate}
         />
       </div>
-    </AdminRoute>
+    </AdminGate>
   );
 }

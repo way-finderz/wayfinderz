@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-import { LandingPage, SignupPage } from "./pages";
+import { AuthGatePage, LandingPage, SignupPage } from "./pages";
 
 // Helper to mock unauthenticated session
 async function mockUnauthenticatedSession(page: Page) {
@@ -179,38 +179,234 @@ test.describe("Authentication", () => {
   });
 
   test.describe("Protected Routes", () => {
-    test("redirects to login when accessing dashboard without auth", async ({ page }) => {
+    test("shows inline login form when accessing dashboard without auth", async ({ page }) => {
       await mockUnauthenticatedSession(page);
 
       await page.goto("/dashboard");
 
-      await expect(page).toHaveURL(/\/(login)?$/, { timeout: 10000 });
+      // Should stay on dashboard URL (no redirect)
+      await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+
+      // Should show inline login form
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signInHeading).toBeVisible();
+      await expect(authGate.loginEmailInput).toBeVisible();
+      await expect(authGate.loginSubmitButton).toBeVisible();
     });
 
-    test("redirects to login when accessing profile without auth", async ({ page }) => {
+    test("shows inline login form when accessing profile without auth", async ({ page }) => {
       await mockUnauthenticatedSession(page);
 
       await page.goto("/profile");
 
-      await expect(page).toHaveURL(/\/(login)?$/, { timeout: 10000 });
+      // Should stay on profile URL (no redirect)
+      await expect(page).toHaveURL(/\/profile/, { timeout: 10000 });
+
+      // Should show inline login form
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signInHeading).toBeVisible();
+      await expect(authGate.loginEmailInput).toBeVisible();
     });
 
-    test("redirects to login when accessing game without auth", async ({ page }) => {
+    test("shows inline login form when accessing game without auth", async ({ page }) => {
       await mockUnauthenticatedSession(page);
 
       await page.goto("/game/road-to-rome");
 
-      await expect(page).toHaveURL(/\/(login)?$/, { timeout: 10000 });
+      // Should stay on game URL (no redirect)
+      await expect(page).toHaveURL(/\/game\/road-to-rome/, { timeout: 10000 });
+
+      // Should show inline login form
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signInHeading).toBeVisible();
+      await expect(authGate.loginEmailInput).toBeVisible();
+    });
+
+    test("can login from protected page and see content", async ({ page }) => {
+      await mockUnauthenticatedSession(page);
+
+      // Mock successful login
+      await page.route("**/api/auth/sign-in/email", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            user: {
+              id: "user-1",
+              name: "Test User",
+              email: "test@example.com",
+            },
+            session: { id: "session-1" },
+          }),
+        });
+      });
+
+      // After login, session check returns authenticated
+      let loginAttempted = false;
+      await page.route("**/api/auth/get-session", async (route) => {
+        if (loginAttempted) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              user: {
+                id: "user-1",
+                name: "Test User",
+                email: "test@example.com",
+                emailVerified: true,
+                role: "user",
+                createdAt: new Date().toISOString(),
+              },
+              session: { id: "session-1", userId: "user-1" },
+            }),
+          });
+        } else {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(null),
+          });
+        }
+      });
+
+      // Mock dashboard data
+      await page.route("**/trpc/game.listJourneys**", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            result: { data: [] },
+          }),
+        });
+      });
+
+      await page.route("**/trpc/game.getUserProgress**", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            result: { data: [] },
+          }),
+        });
+      });
+
+      await page.goto("/dashboard");
+
+      // Should see inline login form
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signInHeading).toBeVisible({ timeout: 10000 });
+
+      // Login via the inline form
+      loginAttempted = true;
+      await authGate.login("test@example.com", "password123");
+
+      // Should stay on dashboard and see dashboard content (redirected back to same page)
+      await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+    });
+
+    test("shows sign up link in auth prompt", async ({ page }) => {
+      await mockUnauthenticatedSession(page);
+
+      await page.goto("/dashboard");
+
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signUpLink).toBeVisible({ timeout: 10000 });
+      await expect(authGate.signUpLink).toHaveAttribute("href", /\/signup\/?/);
     });
   });
 
   test.describe("Admin Routes", () => {
-    test("redirects non-admin users away from admin pages", async ({ page }) => {
+    test("shows inline login form for unauthenticated users on admin pages", async ({ page }) => {
       await mockUnauthenticatedSession(page);
 
       await page.goto("/admin/invites");
 
-      await expect(page).not.toHaveURL("/admin/invites", { timeout: 10000 });
+      // Should stay on admin URL (no redirect)
+      await expect(page).toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+
+      // Should show inline login form
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.signInHeading).toBeVisible();
+      await expect(authGate.loginEmailInput).toBeVisible();
+    });
+
+    test("shows access denied for non-admin authenticated users", async ({ page }) => {
+      // Mock regular user session
+      await page.route("**/api/auth/get-session", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            user: {
+              id: "user-1",
+              name: "Regular User",
+              email: "user@example.com",
+              role: "user",
+            },
+            session: { id: "session-1", userId: "user-1" },
+          }),
+        });
+      });
+
+      await page.goto("/admin/invites");
+
+      // Should stay on admin URL (no redirect)
+      await expect(page).toHaveURL(/\/admin\/invites/, { timeout: 10000 });
+
+      // Should show access denied message
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.accessDeniedHeading).toBeVisible();
+      await expect(authGate.accessDeniedMessage).toBeVisible();
+      await expect(authGate.goToDashboardLink).toBeVisible();
+    });
+
+    test("access denied page links to dashboard", async ({ page }) => {
+      // Mock regular user session
+      await page.route("**/api/auth/get-session", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            user: {
+              id: "user-1",
+              name: "Regular User",
+              email: "user@example.com",
+              role: "user",
+            },
+            session: { id: "session-1", userId: "user-1" },
+          }),
+        });
+      });
+
+      // Mock dashboard data for navigation
+      await page.route("**/trpc/game.listJourneys**", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            result: { data: [] },
+          }),
+        });
+      });
+
+      await page.route("**/trpc/game.getUserProgress**", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            result: { data: [] },
+          }),
+        });
+      });
+
+      await page.goto("/admin/invites");
+
+      const authGate = new AuthGatePage(page);
+      await expect(authGate.goToDashboardLink).toBeVisible({ timeout: 10000 });
+
+      await authGate.goToDashboardLink.click();
+
+      await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
     });
   });
 });

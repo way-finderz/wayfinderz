@@ -3,11 +3,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { signOut, useSession } from "@/features/auth";
 import { useGameStore } from "@/features/game";
-import { cn } from "@/shared/lib";
+import { cn, logger } from "@/shared/lib";
 import type { User } from "@/shared/types/auth";
 
 interface AppLayoutProps {
@@ -20,6 +20,24 @@ export function AppLayout({ children, className }: AppLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const [mounted, setMounted] = useState(false);
+
+  logger.debug("AppLayout", "Render", {
+    pathname,
+    mounted,
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+  });
+
+  useEffect(() => {
+    setMounted(true);
+    logger.debug("AppLayout", "Mounted", { pathname });
+
+    return () => {
+      logger.debug("AppLayout", "Unmounted");
+    };
+  }, [pathname]);
 
   const resetGame = useGameStore((state) => state.resetGame);
 
@@ -46,7 +64,14 @@ export function AppLayout({ children, className }: AppLayoutProps) {
           </Link>
 
           <nav className="flex items-center gap-6">
-            {session?.user ? (
+            {!mounted ? (
+              // Render placeholder during SSR/hydration to prevent mismatch
+              // This matches the server-rendered unauthenticated state
+              <div className="flex items-center gap-4">
+                <div className="animate-pulse rounded h-4 w-20 bg-white/20" aria-hidden="true" />
+                <div className="animate-pulse rounded h-4 w-20 bg-white/20" aria-hidden="true" />
+              </div>
+            ) : session?.user ? (
               <>
                 <Link
                   href="/dashboard"

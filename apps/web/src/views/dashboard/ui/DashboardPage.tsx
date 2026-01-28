@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
+  AuthGate,
   EmailVerificationBlocked,
   EmailVerificationWarning,
-  ProtectedRoute,
   useEmailVerification,
   useSession,
 } from "@/features/auth";
@@ -14,6 +14,7 @@ import {
   useJourneys,
   useUserProgress,
 } from "@/features/game";
+import { logger } from "@/shared/lib";
 import { WelcomeHeader } from "@/shared/ui";
 
 const WARNING_DAYS = 5;
@@ -64,7 +65,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-export function DashboardPage() {
+function DashboardContent() {
   const { data: session } = useSession();
   const { sendVerificationEmail } = useEmailVerification();
 
@@ -83,6 +84,25 @@ export function DashboardPage() {
 
   const loading = journeysLoading || progressLoading;
   const error = journeysError ? "Failed to load journeys. Please try again." : null;
+
+  logger.debug("DashboardContent", "Render", {
+    hasSession: !!session,
+    userId: session?.user?.id,
+    journeysLoading,
+    progressLoading,
+    journeysCount: journeys.length,
+    progressCount: progressList.length,
+    hasError: !!journeysError,
+  });
+
+  useEffect(() => {
+    logger.debug("DashboardContent", "Data updated", {
+      journeysCount: journeys.length,
+      progressCount: progressList.length,
+      loading,
+      error,
+    });
+  }, [journeys.length, progressList.length, loading, error]);
 
   const progressMap = useMemo(
     () => new Map(progressList.map((p) => [p.journeyId, p])),
@@ -109,17 +129,15 @@ export function DashboardPage() {
 
   if (isBlocked && user?.email) {
     return (
-      <ProtectedRoute>
-        <EmailVerificationBlocked
-          userEmail={user.email}
-          onResendEmail={handleResendEmail}
-        />
-      </ProtectedRoute>
+      <EmailVerificationBlocked
+        userEmail={user.email}
+        onResendEmail={handleResendEmail}
+      />
     );
   }
 
   return (
-    <ProtectedRoute>
+    <>
       {!isEmailVerified && userCreatedAt && (
         <EmailVerificationWarning
           userCreatedAt={userCreatedAt}
@@ -140,6 +158,14 @@ export function DashboardPage() {
           <JourneyGrid journeys={journeys} progressMap={progressMap} />
         )}
       </div>
-    </ProtectedRoute>
+    </>
+  );
+}
+
+export function DashboardPage() {
+  return (
+    <AuthGate>
+      <DashboardContent />
+    </AuthGate>
   );
 }

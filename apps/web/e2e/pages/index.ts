@@ -1,3 +1,4 @@
+export { AuthGatePage } from "./auth-gate.page";
 export { BasePage } from "./base.page";
 export { DashboardPage } from "./dashboard.page";
 export { GamePage } from "./game.page";
